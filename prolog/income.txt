@@ -1,0 +1,55 @@
+% Facts: Define thresholds for approval criteria
+minimum_income(30000). % Minimum annual income in dollars
+minimum_credit_score(650). % Minimum credit score
+maximum_debt_to_income_ratio(0.4). % Maximum debt-to-income ratio
+
+% Loan types and interest rates
+interest_rate(home_loan, 6.5). % Home loan interest rate in percentage
+interest_rate(car_loan, 8.5).  % Car loan interest rate in percentage
+
+% Rules: Determine loan eligibility
+eligible_income(Income) :-
+    minimum_income(MinIncome),
+    Income >= MinIncome.
+
+eligible_credit_score(CreditScore) :-
+    minimum_credit_score(MinCreditScore),
+    CreditScore >= MinCreditScore.
+
+eligible_debt_to_income(Income, Debt) :-
+    DebtToIncome is Debt / Income,
+    maximum_debt_to_income_ratio(MaxRatio),
+    DebtToIncome =< MaxRatio.
+
+loan_approved(Income, EmploymentStatus, CreditScore, Debt) :-
+    eligible_income(Income),
+    eligible_credit_score(CreditScore),
+    eligible_debt_to_income(Income, Debt),
+    EmploymentStatus = employed. % Must be employed
+
+% EMI calculation: EMI = [P × R × (1 + R)^N] / [(1 + R)^N - 1]
+calculate_emi(LoanAmount, Rate, Tenure, EMI) :-
+    MonthlyRate is Rate / (12 * 100), % Convert annual interest rate to monthly
+    PowerFactor is (1 + MonthlyRate) ** Tenure,
+    EMI is LoanAmount * MonthlyRate * PowerFactor / (PowerFactor - 1).
+
+% Ask questions and give a recommendation
+start :-
+    write('Welcome to the Bank Loan Approval System!'), nl,
+    write('Please answer the following questions.'), nl,
+    write('Enter your annual income: '), read(Income),
+    write('Enter your employment status (employed/unemployed): '), read(EmploymentStatus),
+    write('Enter your credit score: '), read(CreditScore),
+    write('Enter your total debt amount: '), read(Debt),
+    (loan_approved(Income, EmploymentStatus, CreditScore, Debt) ->
+        (write('Congratulations! Your loan application is approved.'), nl,
+         write('Please select the type of loan (home_loan/car_loan): '), read(LoanType),
+         interest_rate(LoanType, Rate),
+         write('Enter the loan amount: '), read(LoanAmount),
+         write('Enter the loan tenure (in months): '), read(Tenure),
+         calculate_emi(LoanAmount, Rate, Tenure, EMI),
+         format('Your EMI for the ~w is: $~2f per month.', [LoanType, EMI]), nl);
+        (write('We are sorry, but your loan application is not approved.'), nl)).
+
+% Initialization directive to run the start goal
+:- initialization(start).
